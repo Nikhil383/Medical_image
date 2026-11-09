@@ -68,10 +68,14 @@ def health_check():
 @app.post("/api/analyze")
 async def analyze_scan(file: UploadFile = File(...)):
     """Upload an image (JPEG/PNG or DICOM) and return predictions, segmentation, and Grad-CAM explanation."""
-    contents = await file.read()
-    filename = file.filename.lower()
+    import logging
+    logger = logging.getLogger("uvicorn.error")
+    logger.info(f"Incoming /api/analyze request for file: {file.filename}")
 
     try:
+        contents = await file.read()
+        filename = (file.filename or "unknown.jpg").lower()
+
         # Check if DICOM file
         if filename.endswith(".dcm") or contents.startswith(b"DICM", 128):
             image, dcm_meta = read_dicom_image(contents)
@@ -84,7 +88,8 @@ async def analyze_scan(file: UploadFile = File(...)):
         result["study_id"] = f"STD_{int(time.time()*1000)}"
         return result
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to process scan: {str(e)}")
+        logger.error(f"Error during /api/analyze: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to process scan: {str(e)}")
 
 
 @app.post("/api/review")

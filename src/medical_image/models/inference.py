@@ -2,14 +2,20 @@
 
 import base64
 import io
+import os
 from pathlib import Path
 from typing import Dict, Any, Optional, Tuple, Union
+
+# Configure headless matplotlib environment before importing pyplot
+os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib")
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 from PIL import Image
-import matplotlib.pyplot as plt
 
 from .networks import get_classifier, get_monai_segmenter, GradCAM
 
@@ -124,20 +130,39 @@ class MedicalImageInferenceEngine:
         return base64.b64encode(buffered.getvalue()).decode("utf-8")
 
     def _generate_overlay_b64(self, raw_rgb: np.ndarray, mask: np.ndarray, heatmap: np.ndarray) -> str:
-        fig, ax = plt.subplots(figsize=(4, 4), dpi=100)
-        ax.imshow(raw_rgb)
+        # Fast Pillow/NumPy blending to avoid matplotlib heavy memory allocation & font cache stalls on container platforms
+        try:
+            h, w = raw_rgb.shape[:2]
+            # Normalize heatmap to [0, 255]
+            hm_norm = np.clip(heatmap, 0, 1)
+            # Apply color mapping (jet-like: blue -> cyan -> yellow -> red)
+            # Or use matplotlib colormap array directly without creating a Figure
+            cmap = matplotlib.colormaps.get_cmap("jet")
+            colored_heatmap = (cmap(hm_norm)[:, :, :3] * 255).astype(np.uint8)
 
-        # Overlay Grad-CAM attention heatmap (jet)
-        ax.imshow(heatmap, cmap="jet", alpha=0.45)
+            raw_uint8 = (np.clip(raw_rgb, 0, 1) * 255).astype(np.uint8)
+            blended = (0.55 * raw_uint8 + 0.45 * colored_heatmap).astype(np.uint8)
 
-        # Contour segmentation boundary
-        if np.any(mask):
-            ax.contour(mask, levels=[0.5], colors=["lime"], linewidths=1.8)
+            # Draw green outline on lesion mask boundaries
+            if np.any(mask):
+                # Simple boundary detection using difference with shifted masks
+                m = mask.astype(bool)
+                # Dilate/erode or simple neighbor difference
+                pad = np.pad(m, ((1, 1), (1, 1)), mode="constant", constant_values=False)
+                edge = m & ~(pad[:-2, 1:-1] & pad[2:, 1:-1] & pad[1:-1, :-2] & pad[1:-1, 2:])
+                # Dilate edge slightly for visibility (2px boundary)
+                edge_pad = np.pad(edge, ((1, 1), (1, 1)), mode="constant", constant_values=False)
+                thick_edge = edge | edge_pad[:-2, 1:-1] | edge_pad[2:, 1:-1] | edge_pad[1:-1, :-2] | edge_pad[1:-1, 2:]
+                blended[thick_edge] = [0, 255, 0]  # Vibrant lime boundary
 
-        ax.axis("off")
-        fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
-
-        buffered = io.BytesIO()
-        plt.savefig(buffered, format="JPEG", bbox_inches="tight", pad_inches=0)
-        plt.close(fig)
-        return base64.b64encode(buffered.getvalue()).decode("utf-8")
+            out_img = Image.fromarray(blended, mode="RGB")
+            buffered = io.BytesIO()
+            out_img.save(buffered, format="JPEG", quality=90)
+            return base64.b64encode(buffered.getvalue()).decode("utf-8")
+        except Exception:
+            # Fallback to pure raw RGB if overlay fails
+            raw_uint8 = (np.clip(raw_rgb, 0, 1) * 255).astype(np.uint8)
+            out_img = Image.fromarray(raw_uint8, mode="RGB")
+            buffered = io.BytesIO()
+            out_img.save(buffered, format="JPEG", quality=85)
+            return base64.b64encode(buffered.getvalue()).decode("utf-8")
