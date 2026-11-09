@@ -65,7 +65,7 @@ htmlcov/
 *.bin
 *.h5
 *.ckpt
-models/
+/models/
 checkpoints/
 
 # Datasets and large data directories
