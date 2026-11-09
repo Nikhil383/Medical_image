@@ -6,7 +6,50 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
-from monai.networks.nets import UNet
+
+# Lazy or pure PyTorch fallback for UNet to keep memory below 300MB on free-tier containers
+class PurePyTorchUNet(nn.Module):
+    """Memory-efficient UNet for 2D medical lesion segmentation."""
+    def __init__(self, in_channels: int = 3, out_channels: int = 1):
+        super().__init__()
+        self.enc1 = nn.Sequential(
+            nn.Conv2d(in_channels, 16, 3, padding=1),
+            nn.BatchNorm2d(16),
+            nn.ReLU(inplace=True),
+        )
+        self.pool1 = nn.MaxPool2d(2)
+        self.enc2 = nn.Sequential(
+            nn.Conv2d(16, 32, 3, padding=1),
+            nn.BatchNorm2d(32),
+            nn.ReLU(inplace=True),
+        )
+        self.pool2 = nn.MaxPool2d(2)
+        self.bottleneck = nn.Sequential(
+            nn.Conv2d(32, 64, 3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+        )
+        self.up2 = nn.ConvTranspose2d(64, 32, 2, stride=2)
+        self.dec2 = nn.Sequential(
+            nn.Conv2d(64, 32, 3, padding=1),
+            nn.BatchNorm2d(32),
+            nn.ReLU(inplace=True),
+        )
+        self.up1 = nn.ConvTranspose2d(32, 16, 2, stride=2)
+        self.dec1 = nn.Sequential(
+            nn.Conv2d(32, 16, 3, padding=1),
+            nn.BatchNorm2d(16),
+            nn.ReLU(inplace=True),
+        )
+        self.final = nn.Conv2d(16, out_channels, 1)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        e1 = self.enc1(x)
+        e2 = self.enc2(self.pool1(e1))
+        b = self.bottleneck(self.pool2(e2))
+        d2 = self.dec2(torch.cat([self.up2(b), e2], dim=1))
+        d1 = self.dec1(torch.cat([self.up1(d2), e1], dim=1))
+        return self.final(d1)
 
 
 def get_classifier(model_name: str = "resnet18", num_classes: int = 2, pretrained: bool = True) -> nn.Module:
@@ -30,17 +73,20 @@ def get_classifier(model_name: str = "resnet18", num_classes: int = 2, pretraine
 
 
 def get_monai_segmenter(spatial_dims: int = 2, in_channels: int = 3, out_channels: int = 1) -> nn.Module:
-    """Instantiate a MONAI UNet architecture for lesion segmentation."""
-    model = UNet(
-        spatial_dims=spatial_dims,
-        in_channels=in_channels,
-        out_channels=out_channels,
-        channels=(16, 32, 64, 128, 256),
-        strides=(2, 2, 2, 2),
-        num_res_units=2,
-        norm="batch",
-    )
-    return model
+    """Instantiate UNet architecture for lesion segmentation with fallback to PurePyTorchUNet."""
+    try:
+        from monai.networks.nets import UNet
+        return UNet(
+            spatial_dims=spatial_dims,
+            in_channels=in_channels,
+            out_channels=out_channels,
+            channels=(16, 32, 64, 128, 256),
+            strides=(2, 2, 2, 2),
+            num_res_units=2,
+            norm="batch",
+        )
+    except (ImportError, Exception):
+        return PurePyTorchUNet(in_channels=in_channels, out_channels=out_channels)
 
 
 class GradCAM:

@@ -37,6 +37,8 @@ class MedicalImageInferenceEngine:
             self.device = torch.device(device)
 
         # Initialize Models (pretrained=False by default to allow fully offline / sandboxed execution)
+        torch.set_grad_enabled(True)
+        torch.set_num_threads(1)  # Limit thread overhead on single-core / low-memory containers
         self.classifier = get_classifier(model_name=model_name, num_classes=2, pretrained=pretrained)
         self.segmenter = get_monai_segmenter(spatial_dims=2, in_channels=3, out_channels=1)
 
@@ -93,6 +95,12 @@ class MedicalImageInferenceEngine:
 
         # 3. Explainability via Grad-CAM
         heatmap = self.grad_cam.generate(tensor, target_class=1 if prediction == "malignant" else 0)
+
+        # Clear gradient graph and cache immediately to stay below container memory limit
+        self.classifier.zero_grad(set_to_none=True)
+        del tensor
+        import gc
+        gc.collect()
 
         # 4. Generate Base64 Visualization Images
         scan_b64 = self._encode_image_b64((raw_np * 255).astype(np.uint8))

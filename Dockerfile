@@ -34,4 +34,7 @@ EXPOSE 8000
 ENV PYTHONPATH=/app/src
 ENV PORT=8000
 ENV MPLCONFIGDIR=/tmp/matplotlib
-CMD ["sh", "-c", ".venv/bin/uvicorn medical_image.api.server:app --host 0.0.0.0 --port ${PORT:-8000} --timeout-keep-alive 120"]
+ENV OMP_NUM_THREADS=1
+ENV MKL_NUM_THREADS=1
+ENV PYTORCH_NO_CUDA_MEMORY_CACHING=1
+CMD ["sh", "-c", ".venv/bin/uvicorn medical_image.api.server:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1 --timeout-keep-alive 120"]
