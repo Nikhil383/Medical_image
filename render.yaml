@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: ai-medical-imaging-platform
+    env: docker
+    dockerfilePath: Dockerfile
+    plan: free
+    region: oregon
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: PYTHONPATH
+        value: /app/src

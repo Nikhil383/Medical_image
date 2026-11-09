@@ -32,4 +32,5 @@ RUN uv pip install -e . --no-deps
 EXPOSE 8000
 
 ENV PYTHONPATH=/app/src
-CMD [".venv/bin/uvicorn", "medical_image.api.server:app", "--host", "0.0.0.0", "--port", "8000"]
+ENV PORT=8000
+CMD ["sh", "-c", ".venv/bin/uvicorn medical_image.api.server:app --host 0.0.0.0 --port ${PORT:-8000}"]

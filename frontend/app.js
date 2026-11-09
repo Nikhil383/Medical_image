@@ -12,7 +12,8 @@ function App() {
   const [systemStatus, setSystemStatus] = useState(null);
   const [notification, setNotification] = useState(null);
 
-  const API_BASE = "http://localhost:8000";
+  // Use relative API path if served from same origin (e.g. unified deployment), or fallback to environment/localhost
+  const API_BASE = window.API_BASE_URL || (window.location.port === "8000" ? "" : (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" ? "http://localhost:8000" : ""));
 
   useEffect(() => {
     fetchStatus();

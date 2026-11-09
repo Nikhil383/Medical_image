@@ -9,6 +9,8 @@ from datetime import datetime
 
 from fastapi import FastAPI, File, UploadFile, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from PIL import Image
 
@@ -131,3 +133,23 @@ def get_orthanc_studies():
         return {"connected": True, "count": len(studies), "studies": details}
     except Exception as e:
         return {"connected": False, "error": str(e)}
+
+
+# Mount static frontend files for single-container deployment (Render, Docker, etc.)
+FRONTEND_DIR = Path(__file__).resolve().parent.parent.parent.parent / "frontend"
+if FRONTEND_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
+
+    @app.get("/")
+    def serve_frontend_index():
+        index_file = FRONTEND_DIR / "index.html"
+        if index_file.exists():
+            return FileResponse(str(index_file))
+        return {"message": "Frontend index.html not found"}
+
+    @app.get("/app.js")
+    def serve_frontend_app_js():
+        js_file = FRONTEND_DIR / "app.js"
+        if js_file.exists():
+            return FileResponse(str(js_file), media_type="application/javascript")
+        return {"message": "app.js not found"}
