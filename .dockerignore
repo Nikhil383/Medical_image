@@ -1,0 +1,15 @@
+.git
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.vscode
+.idea
+data/raw
+data/chexepert
+data/lungs
+data/sample_dicom
+data/demo/images
+data/demo/masks

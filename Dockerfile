@@ -14,7 +14,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 WORKDIR /app
 
 # Copy dependency definitions and lockfile
-COPY pyproject.toml .python-version ./
+COPY pyproject.toml .python-version README.md ./
 
 # Install dependencies using uv
 RUN uv venv .venv && \
