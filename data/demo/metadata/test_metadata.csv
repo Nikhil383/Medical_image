@@ -1,0 +1,5 @@
+image_id,image_path,mask_path,diagnosis,label
+ISIC_9000012,D:\nexvia\medical_image\data\demo\images\ISIC_9000012.jpg,D:\nexvia\medical_image\data\demo\masks\ISIC_9000012_Segmentation.png,malignant,1
+ISIC_9000013,D:\nexvia\medical_image\data\demo\images\ISIC_9000013.jpg,D:\nexvia\medical_image\data\demo\masks\ISIC_9000013_Segmentation.png,benign,0
+ISIC_9000014,D:\nexvia\medical_image\data\demo\images\ISIC_9000014.jpg,D:\nexvia\medical_image\data\demo\masks\ISIC_9000014_Segmentation.png,benign,0
+ISIC_9000015,D:\nexvia\medical_image\data\demo\images\ISIC_9000015.jpg,D:\nexvia\medical_image\data\demo\masks\ISIC_9000015_Segmentation.png,malignant,1

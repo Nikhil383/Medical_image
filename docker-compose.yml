@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  # Orthanc Open-Source DICOM PACS Server
+  orthanc:
+    image: orthancteam/orthanc:latest
+    container_name: orthanc-dicom-server
+    ports:
+      - "8042:8042"  # REST API & Web GUI
+      - "4242:4242"  # DICOM C-STORE / C-MOVE
+    environment:
+      ORTHANC__AUTHENTICATION_ENABLED: "false"
+      ORTHANC__REMOTE_ACCESS_ALLOWED: "true"
+    volumes:
+      - orthanc-storage:/var/lib/orthanc/db
+    restart: unless-stopped
+
+  # AI Inference & Clinical Diagnostic API Service
+  ai-diagnostic-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai-diagnostic-engine
+    ports:
+      - "8000:8000"
+    environment:
+      PYTHONPATH: /app/src
+      ORTHANC_URL: http://orthanc:8042
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - orthanc
+    restart: unless-stopped
+
+  # React Web Diagnostic & Review Viewer (Served via lightweight Nginx)
+  web-viewer:
+    image: nginx:alpine
+    container_name: medical-imaging-viewer
+    ports:
+      - "3000:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+    depends_on:
+      - ai-diagnostic-api
+    restart: unless-stopped
+
+volumes:
+  orthanc-storage:

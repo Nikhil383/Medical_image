@@ -1,0 +1,38 @@
+[project]
+name = "medical-image"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Nikhil383", email = "nikhilmahesh89@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "kagglehub>=1.0.3",
+    "matplotlib>=3.11.2",
+    "numpy>=2.5.4",
+    "pandas>=3.1.1",
+    "pillow>=13.0.0",
+    "polars>=2.1.0",
+    "pyarrow>=26.0.1",
+    "requests>=2.34.2",
+    "scikit-learn>=1.9.1",
+    "torch>=2.15.0",
+    "torchvision>=0.29.2",
+    "tqdm>=4.70.1",
+]
+
+[project.scripts]
+medical-image = "medical_image:main"
+
+[build-system]
+requires = ["uv_build>=0.13.0,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.4.0",
+    "jupyter>=1.1.1",
+    "pytest>=9.2.0",
+    "ruff>=0.17.4",
+]
