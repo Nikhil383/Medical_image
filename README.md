@@ -153,14 +153,14 @@ Open two terminal windows:
 
 #### Terminal 1 — Start the FastAPI AI Inference Engine:
 ```bash
-uv run uvicorn medical_image.api.server:app --reload --port 8000
+python.exe -m uvicorn src.medical_image.api.server:app --host 0.0.0.0 --port 8000 --reload
 ```
 - API Health Status: `http://localhost:8000/api/health`
 - Interactive Swagger API Documentation: `http://localhost:8000/docs`
 
 #### Terminal 2 — Start the React Radiologist Dashboard:
 ```bash
-python -m http.server 3000 --directory frontend
+python.exe -m http.server 3000 --directory frontend
 ```
 Now navigate to **`http://localhost:3000`** in your browser.
 
@@ -202,7 +202,13 @@ docker-compose up --build
 
 ---
 
-## 7. Deliverables & Evaluation Checklist
+## 7. Demo
+
+![alt text](image.png)
+
+---
+
+## 8. Deliverables & Evaluation Checklist
 
 - [x] **Working Interactive Demo:** React radiologist dashboard with real-time multi-view canvas (Raw scan / Grad-CAM / MONAI mask).
 - [x] **Deep Learning & Explainability:** MONAI U-Net segmentation + PyTorch Transfer Learning classification + Grad-CAM heatmap generation.
@@ -212,3 +218,5 @@ docker-compose up --build
 - [x] **Containerization:** Production `Dockerfile` and `docker-compose.yml`.
 - [x] **Package Management:** Fast, modern Python setup utilizing `uv`.
 - [x] **Clinical Notice:** Prominent educational disclaimer and algorithmic bias documentation.
+
+
