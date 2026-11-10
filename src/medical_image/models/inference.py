@@ -45,9 +45,14 @@ class MedicalImageInferenceEngine:
         if classifier_path and Path(classifier_path).exists():
             state_dict = torch.load(classifier_path, map_location=self.device)
             self.classifier.load_state_dict(state_dict)
+            print(f"[InferenceEngine] Successfully loaded classifier weights from {classifier_path}")
+        else:
+            print("[InferenceEngine] Running with default classifier weights (pretrained=%s)" % pretrained)
 
         if segmenter_path and Path(segmenter_path).exists():
             state_dict = torch.load(segmenter_path, map_location=self.device)
+            self.segmenter.load_state_dict(state_dict)
+            print(f"[InferenceEngine] Successfully loaded segmenter weights from {segmenter_path}")
             self.segmenter.load_state_dict(state_dict)
 
         self.classifier.to(self.device).eval()

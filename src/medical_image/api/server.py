@@ -39,8 +39,16 @@ AUDIT_LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
 if not AUDIT_LOG_FILE.exists():
     AUDIT_LOG_FILE.write_text("[]", encoding="utf-8")
 
-# Initialize Inference Engine and Orthanc Client
-engine = MedicalImageInferenceEngine()
+# Model checkpoints
+CLASSIFIER_WEIGHTS = Path("weights/resnet18_isic_best.pth")
+SEGMENTER_WEIGHTS = Path("weights/unet_isic_best.pth")
+
+# Initialize Inference Engine with weights if available
+engine = MedicalImageInferenceEngine(
+    classifier_path=CLASSIFIER_WEIGHTS if CLASSIFIER_WEIGHTS.exists() else None,
+    segmenter_path=SEGMENTER_WEIGHTS if SEGMENTER_WEIGHTS.exists() else None,
+    pretrained=True if not CLASSIFIER_WEIGHTS.exists() else False,
+)
 orthanc_client = OrthancClient()
 
 
